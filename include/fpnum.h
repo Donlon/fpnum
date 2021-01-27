@@ -42,10 +42,7 @@ struct fpnum {
         static_assert(_m <= 16);
     }
 
-    fpnum<_e, _m, _b> &operator=(const fpnum<_e, _m, _b> &other) {
-        this->bits = other.bits;
-        return *this;
-    }
+    fpnum<_e, _m, _b> &operator=(const fpnum<_e, _m, _b> &other) = default;
 
     template<int sgn, unsigned int exp, unsigned int man>
     static fpnum<_e, _m, _b> from() {
@@ -66,16 +63,16 @@ struct fpnum {
         int e = floorf(log2f(value / (float) (1u << _m)) + bias);
         if (e < 0) {
             return getZero();
-        } else if (e > exp_max) {
+        } else if (e > (int) exp_max) {
             return sign == Positive ? getMax() : getMin();
         }
         float step = exp2f(e - (int) bias);
         int m = roundf(value / step - (float) (1u << _m));
-        if (m > man_max) {
+        if (m > (int) man_max) {
             e++;
             m = 0;
         }
-        if (e > exp_max) {
+        if (e > (int) exp_max) {
             return sign == Positive ? getMax() : getMin();
         }
         return fpnum<_e, _m, _b>(sign, e, m);
@@ -166,9 +163,9 @@ struct fpnum {
                     absExpDiff = -expDiff;
                 }
                 // 1111111_0000_0000000..
-                unsigned int mask = ~(1 << (man_n + absExpDiff)) + 1;
+                unsigned int mask = ~(1u << (man_n + absExpDiff)) + 1;
                 size_t shifts = 0;
-                while ((mask & man) != (1 << (man_n + absExpDiff))) {
+                while ((mask & man) != (1u << (man_n + absExpDiff))) {
                     shifts++;
                     man <<= 1;
                 }
