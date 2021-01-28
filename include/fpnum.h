@@ -42,6 +42,37 @@ struct fpnum {
         static_assert(_m <= 16);
     }
 
+    explicit fpnum(float value) { // NOLINT
+        int sign;
+        if (value < 0) {
+            sign = Negative;
+            value = -value;
+        } else {
+            sign = Positive;
+        }
+        int e = floorf(log2f(value / (float) (1u << _m)) + bias);
+        if (e < 0) {
+            *this = getZero();
+            return;
+        } else if (e > (int) exp_max) {
+            *this = sign == Positive ? getMax() : getMin();
+            return;
+        }
+        float step = exp2f(e - (int) bias);
+        int m = roundf(value / step - (float) (1u << _m));
+        if (m > (int) man_max) {
+            e++;
+            m = 0;
+        }
+        if (e > (int) exp_max) {
+            *this = sign == Positive ? getMax() : getMin();
+            return;
+        }
+        this->sign = sign;
+        this->exponent = e;
+        this->mantissa = m;
+    }
+
     fpnum<_e, _m, _b> &operator=(const fpnum<_e, _m, _b> &other) = default;
 
     template<int sgn, unsigned int exp, unsigned int man>
@@ -53,29 +84,7 @@ struct fpnum {
     }
 
     static fpnum<_e, _m, _b> fromValue(float value) {
-        int sign;
-        if (value < 0) {
-            sign = Negative;
-            value = -value;
-        } else {
-            sign = Positive;
-        }
-        int e = floorf(log2f(value / (float) (1u << _m)) + bias);
-        if (e < 0) {
-            return getZero();
-        } else if (e > (int) exp_max) {
-            return sign == Positive ? getMax() : getMin();
-        }
-        float step = exp2f(e - (int) bias);
-        int m = roundf(value / step - (float) (1u << _m));
-        if (m > (int) man_max) {
-            e++;
-            m = 0;
-        }
-        if (e > (int) exp_max) {
-            return sign == Positive ? getMax() : getMin();
-        }
-        return fpnum<_e, _m, _b>(sign, e, m);
+        return fpnum<_e, _m, _b>(value);
     }
 
     template<unsigned int exp, unsigned int man>
@@ -216,6 +225,22 @@ struct fpnum {
         }
         fpnum<_e, _m, _b> result(this->sign == num.sign ? Positive : Negative, exp, man & man_max);
         return result;
+    }
+
+    fpnum<_e, _m, _b> operator/(int num) const {
+        switch (num) { // NOLINT
+            case 2: {
+                fpnum<_e, _m, _b> result(num);
+                if (result.exponent == 0) {
+                    return getZero();
+                } else {
+                    result.exponent -= 1;
+                    return result;
+                }
+            }
+            default:
+                throw std::exception();
+        }
     }
 
     fpnum<_e, _m, _b> &operator+=(const fpnum<_e, _m, _b> &num) {
