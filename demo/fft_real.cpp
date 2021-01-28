@@ -5,7 +5,9 @@
 #include <fpnum.h>
 #include <fp8.h>
 
-const size_t fftSize_ldn = 8; // fft25
+#include "common.h"
+
+const size_t fftSize_ldn = 8; // fft256
 const size_t fftSize = 1 << fftSize_ldn;
 
 template<typename _num_type>
@@ -25,35 +27,6 @@ std::unique_ptr<_num_type[]> generateSourceData() {
         new(&data[i]) _num_type(cosf((float) i / (float) fftSize * 53.5f * (float) M_PI));
     }
     return data;
-}
-
-template<typename>
-struct is_fpnum : std::false_type {
-};
-
-template<size_t _e, size_t _m, size_t _b>
-struct is_fpnum<fpnum<_e, _m, _b>> : std::true_type {
-};
-
-template<typename _type>
-void printBuffer(_type *data, size_t count, const std::string &label = {}) {
-    if (!label.empty()) {
-        std::cout << label << "=[";
-    }
-    for (size_t i = 0; i < count; i++) {
-        if constexpr (is_fpnum<_type>::value) {
-            std::cout << data[i].getValue();
-        } else {
-            std::cout << data[i];
-        }
-        if (i != count - 1) {
-            std::cout << ", ";
-        }
-    }
-    if (!label.empty()) {
-        std::cout << "];";
-    }
-    std::cout << std::endl;
 }
 
 template<typename _type>

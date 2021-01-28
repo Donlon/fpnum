@@ -4,66 +4,12 @@
 #include <fp8.h>
 #include <vector>
 
+#include "common.h"
+
 enum OpType {
     Add,
     Mul
 };
-
-template<typename>
-struct is_fpnum : std::false_type {
-};
-
-template<size_t _e, size_t _m, size_t _b>
-struct is_fpnum<fpnum<_e, _m, _b>> : std::true_type {
-};
-
-template<typename _type>
-void printBuffer(std::vector<_type> &data, const std::string &label = {}) {
-    if (!label.empty()) {
-        std::cout << label << "=[";
-    }
-    for (auto it = data.begin(); it != data.end(); it++) {
-        if constexpr (is_fpnum<_type>::value) {
-            std::cout << it->getValue();
-        } else {
-            std::cout << *it;
-        }
-        if (it != data.end() - 1) {
-            std::cout << ", ";
-        }
-    }
-    if (!label.empty()) {
-        std::cout << "];";
-    }
-    std::cout << std::endl;
-}
-
-template<typename _type>
-void printBuffer2d(std::vector<std::vector<_type>> &data, const std::string &label = {}) {
-    if (!label.empty()) {
-        std::cout << label << "=[";
-    }
-    for (auto it = data.begin(); it != data.end(); it++) {
-        auto row = *it;
-        for (auto it2 = row.begin(); it2 != row.end(); it2++) {
-            if constexpr (is_fpnum<_type>::value) {
-                std::cout << it2->getValue();
-            } else {
-                std::cout << *it2;
-            }
-            if (it2 != row.end() - 1) {
-                std::cout << ", ";
-            }
-        }
-        if (it != data.end() - 1) {
-            std::cout << ";";
-        }
-    }
-    if (!label.empty()) {
-        std::cout << "];";
-    }
-    std::cout << std::endl;
-}
 
 template<typename _fpType, OpType opType>
 void arithTest() {
@@ -94,7 +40,7 @@ void arithTest() {
         v.resize(w);
     }
 
-    float maxAbsError = std::numeric_limits<double>::min();
+    float maxAbsError = std::numeric_limits<float>::min();
     float errorSum = 0.;
     float absErrorSum = 0.;
 
@@ -109,7 +55,7 @@ void arithTest() {
             if constexpr (opType == Add) {
                 res = x + y;
                 expectedRes = xv + yv;
-            } else if constexpr(opType == Mul) {
+            } else if constexpr (opType == Mul) {
                 res = x * y;
                 expectedRes = xv * yv;
             }

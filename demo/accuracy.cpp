@@ -4,30 +4,11 @@
 #include <fp8.h>
 #include <memory>
 
+#include "common.h"
+
 using fp_t = fp8a;
 
 const int kCount = 5000;
-
-template<typename _type>
-void printBuffer(_type *data, size_t count, const std::string &label = {}) {
-    if (!label.empty()) {
-        std::cout << label << "=[";
-    }
-    for (size_t i = 0; i < count; i++) {
-        if constexpr (std::is_same<_type, fp_t>::value) {
-            std::cout << data[i].getValue();
-        } else {
-            std::cout << data[i];
-        }
-        if (i != count - 1) {
-            std::cout << ", ";
-        }
-    }
-    if (!label.empty()) {
-        std::cout << "];";
-    }
-    std::cout << std::endl;
-}
 
 template<typename _fp_type>
 double getError(double num) {
