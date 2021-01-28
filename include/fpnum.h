@@ -230,7 +230,7 @@ struct fpnum {
     fpnum<_e, _m, _b> operator/(int num) const {
         switch (num) { // NOLINT
             case 2: {
-                fpnum<_e, _m, _b> result(num);
+                fpnum<_e, _m, _b> result(*this);
                 if (result.exponent == 0) {
                     return getZero();
                 } else {
