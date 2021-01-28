@@ -37,6 +37,9 @@ struct fpnum {
     };
 #pragma pack(pop)
 
+    fpnum() : fpnum(getZero()) { // NOLINT
+    }
+
     fpnum(int sgn, unsigned int exp, unsigned int man) // NOLINT
             : sign(sgn), exponent(exp), mantissa(man) {
         static_assert(_m <= 16);
