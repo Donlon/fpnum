@@ -7,15 +7,15 @@
 /// @param e exponent
 /// @param m mantissa
 /// @param b bias
-template<unsigned int _e, unsigned int _m, unsigned int _b = (1u << _e) - 1 + _m>
+template<size_t _e, size_t _m, size_t _b = (1u << _e) - 1 + _m>
 struct fpnum {
     // v = m(with hidden bit) * 2^(e - bias)
-    static const unsigned int exp_n = _e;
-    static const unsigned int man_n = _m;
-    static const unsigned int bias = _b;
-    static const unsigned int exp_max = (1u << _e) - 1;
-    static const unsigned int man_max = (1u << _m) - 1;
-    static const unsigned int size = _e + _m + 1;
+    static const size_t exp_n = _e;
+    static const size_t man_n = _m;
+    static const size_t bias = _b;
+    static const size_t exp_max = (1u << _e) - 1;
+    static const size_t man_max = (1u << _m) - 1;
+    static const size_t size = _e + _m + 1;
 
     // static const fpnum<_e, _m, _b> zero = fpnum<e, m>(0, 0, 0);
     // static const fpnum<_e, _m, _b> max = fpnum<e, m>(0, -1, -1);
@@ -29,9 +29,9 @@ struct fpnum {
 #pragma pack(push, 1)
     union {
         struct {
-            unsigned int mantissa: _m; // LSB
-            unsigned int exponent: _e; // MSB
-            unsigned int sign: 1;
+            size_t mantissa: _m; // LSB
+            size_t exponent: _e; // MSB
+            size_t sign: 1;
         };
         unsigned bits: 1 + _e + _m;
     };
@@ -40,7 +40,7 @@ struct fpnum {
     fpnum() : fpnum(getZero()) { // NOLINT
     }
 
-    fpnum(int sgn, unsigned int exp, unsigned int man) // NOLINT
+    fpnum(int sgn, size_t exp, size_t man) // NOLINT
             : sign(sgn), exponent(exp), mantissa(man) {
         static_assert(_m <= 16);
     }
@@ -78,7 +78,12 @@ struct fpnum {
 
     fpnum<_e, _m, _b> &operator=(const fpnum<_e, _m, _b> &other) = default;
 
-    template<int sgn, unsigned int exp, unsigned int man>
+    fpnum<_e, _m, _b> &operator=(float other) {
+        *this = fpnum<_e, _m, _b>(other);
+        return *this;
+    };
+
+    template<int sgn, size_t exp, size_t man>
     static fpnum<_e, _m, _b> from() {
         static_assert(exp <= exp_max, "exponent value is too big");
         static_assert(man <= man_max, "mantissa value is too big");
@@ -90,12 +95,12 @@ struct fpnum {
         return fpnum<_e, _m, _b>(value);
     }
 
-    template<unsigned int exp, unsigned int man>
+    template<size_t exp, size_t man>
     static fpnum<_e, _m, _b> positiveNum() {
         return from<Positive, exp, man>();
     }
 
-    template<unsigned int exp, unsigned int man>
+    template<size_t exp, size_t man>
     static fpnum<_e, _m, _b> negativeNum() {
         return from<Negative, exp, man>();
     }
@@ -131,10 +136,10 @@ struct fpnum {
         if (this->sign == other.sign) {
             int expDiff = (int) this->exponent - (int) other.exponent;
             fpnum<_e, _m, _b> result(this->sign, this->exponent, 0);
-            unsigned int man;
+            size_t man;
             if (expDiff > 0) { // this > other
                 man = this->getRealMantissa() + (other.getRealMantissa() >> expDiff);
-            } else if (expDiff < 0) { // this > other
+            } else if (expDiff < 0) { // this < other
                 result.exponent = other.exponent;
                 man = other.getRealMantissa() + (this->getRealMantissa() >> (-expDiff));
             } else {
@@ -153,16 +158,25 @@ struct fpnum {
         } else { // (+A) + (-B) or (-A) + (+B) = -((+A) + (-B))
             int expDiff = (int) this->exponent - (int) other.exponent;
             fpnum<_e, _m, _b> result(this->sign, this->exponent, 0);
-            unsigned int man;
+            size_t man;
+            bool ltOther;
 
             // |this| - |other|
             if (expDiff > 0) { // this > other
+                ltOther = false;
                 man = (this->getRealMantissa() << expDiff) - other.getRealMantissa();
-            } else if (expDiff < 0) { // this > other
+            } else if (expDiff < 0) { // this < other
+                ltOther = true;
                 result.exponent = other.exponent;
                 man = (other.getRealMantissa() << (-expDiff)) - this->getRealMantissa();
             } else {
-                man = other.getRealMantissa() - this->getRealMantissa();
+                if (this->getRealMantissa() > other.getRealMantissa()) { // this > other
+                    ltOther = false;
+                    man = this->getRealMantissa() - other.getRealMantissa();
+                } else { // this < other
+                    ltOther = true;
+                    man = other.getRealMantissa() - this->getRealMantissa();
+                }
             }
             // ||A| - |B|| <= max(|A|, |B|) <= max
             if (man == 0) {
@@ -175,7 +189,7 @@ struct fpnum {
                     absExpDiff = -expDiff;
                 }
                 // 1111111_0000_0000000..
-                unsigned int mask = ~(1u << (man_n + absExpDiff)) + 1;
+                size_t mask = ~(1u << (man_n + absExpDiff)) + 1;
                 size_t shifts = 0;
                 while ((mask & man) != (1u << (man_n + absExpDiff))) {
                     shifts++;
@@ -188,9 +202,8 @@ struct fpnum {
                     return getZero();
                 }
             }
-            // (-A) + (+B) = -((+A) + (-B)), invert the sign
-            // expDiff < 0, invert the sign
-            if ((this->sign == Negative) != (expDiff < 0)) {
+            // this < other, invert the sign
+            if (ltOther) {
                 result.sign ^= 1;
             }
             return result;
@@ -210,9 +223,9 @@ struct fpnum {
             return this->sign == num.sign ? getMax() : getMin();
         }
 
-        unsigned int man = this->getRealMantissa() * num.getRealMantissa();
+        size_t man = this->getRealMantissa() * num.getRealMantissa();
         // Normalization
-        unsigned int mask = ~(1 << (2 * man_n)) + 1;
+        size_t mask = ~(1 << (2 * man_n)) + 1;
         size_t shifts = 0;
         while ((mask & man) != (1 << (2 * man_n))) {
             shifts++;
@@ -300,8 +313,16 @@ struct fpnum {
         return !this->operator==(other);
     }
 
-    unsigned int getRealMantissa() const { // NOLINT
+    size_t getRealMantissa() const { // NOLINT
         return mantissa + (1u << _m);
+    }
+
+    explicit operator float() {
+        return (float) getValue();
+    }
+
+    explicit operator double() {
+        return getValue();
     }
 
     double getValue() const { // NOLINT
@@ -369,9 +390,14 @@ struct fpnum {
         static const fpnum<_e, _m, _b> min = fpnum<_e, _m, _b>(Negative, -1, -1);
         return min;
     }
+
+    static const fpnum<_e, _m, _b> &getPositiveMin() {
+        static const fpnum<_e, _m, _b> min = fpnum<_e, _m, _b>(Positive, 0, 1);
+        return min;
+    }
 };
 
-template<unsigned int _e, unsigned int _m, unsigned int _b>
+template<size_t _e, size_t _m, size_t _b>
 std::ostream &operator<<(std::ostream &os, const fpnum<_e, _m, _b> &v) {
     os << v.toRepresentation() << "(" << v.getValue() << ")";
     return os;

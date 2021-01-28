@@ -140,12 +140,18 @@ TEST(Fp8SubtractionTest, _0) { // NOLINT
     // 1_0101e3 - 1_0100e1 = 1_0000e3
     EXPECT_EQ((fp8::positiveNum<3, 5>() + fp8::negativeNum<1, 4>()), (fp8::positiveNum<3, 0>()));
     EXPECT_EQ((fp8::positiveNum<1, 4>() + fp8::negativeNum<3, 5>()), (fp8::negativeNum<3, 0>()));
+    EXPECT_EQ((fp8::negativeNum<1, 4>() + fp8::positiveNum<3, 5>()), (fp8::positiveNum<3, 0>()));
+    EXPECT_EQ((fp8::negativeNum<3, 5>() + fp8::positiveNum<1, 4>()), (fp8::negativeNum<3, 0>()));
     // 1_0101e5 - 1_0000e1 = 1_0100e5
     EXPECT_EQ((fp8::positiveNum<5, 5>() + fp8::negativeNum<1, 0>()), (fp8::positiveNum<5, 4>()));
     EXPECT_EQ((fp8::positiveNum<1, 0>() + fp8::negativeNum<5, 5>()), (fp8::negativeNum<5, 4>()));
+    EXPECT_EQ((fp8::negativeNum<1, 0>() + fp8::positiveNum<5, 5>()), (fp8::positiveNum<5, 4>()));
+    EXPECT_EQ((fp8::negativeNum<5, 5>() + fp8::positiveNum<1, 0>()), (fp8::negativeNum<5, 4>()));
     // 1_0111e7 - 1_1100e5 = 1_0000e7
     EXPECT_EQ((fp8::positiveNum<7, 7>() + fp8::negativeNum<5, 12>()), (fp8::positiveNum<7, 0>()));
     EXPECT_EQ((fp8::positiveNum<5, 12>() + fp8::negativeNum<7, 7>()), (fp8::negativeNum<7, 0>()));
+    EXPECT_EQ((fp8::negativeNum<5, 12>() + fp8::positiveNum<7, 7>()), (fp8::positiveNum<7, 0>()));
+    EXPECT_EQ((fp8::negativeNum<7, 7>() + fp8::positiveNum<5, 12>()), (fp8::negativeNum<7, 0>()));
     // 1_0000e4 - 1_0000e3 = 0_1000e4 = 1_0000e3
     EXPECT_EQ((fp8::positiveNum<4, 0>() + fp8::negativeNum<3, 0>()), (fp8::positiveNum<3, 0>()));
     EXPECT_EQ((fp8::positiveNum<3, 0>() + fp8::negativeNum<4, 0>()), (fp8::negativeNum<3, 0>()));
@@ -155,4 +161,10 @@ TEST(Fp8SubtractionTest, _0) { // NOLINT
     // 1_0000e4 - 1_1100e3 = 0_0010e4 = 1_0000e1
     EXPECT_EQ((fp8::positiveNum<4, 0>() + fp8::negativeNum<3, 12>()), (fp8::positiveNum<1, 0>()));
     EXPECT_EQ((fp8::positiveNum<3, 12>() + fp8::negativeNum<4, 0>()), (fp8::negativeNum<1, 0>()));
+    // 1_1000e7 - 1_0011e7 = 0_0101e7 = 1_0100e5
+    EXPECT_EQ((fp8::positiveNum<7, 8>() + fp8::negativeNum<7, 3>()), (fp8::positiveNum<5, 4>()));
+    EXPECT_EQ((fp8::positiveNum<7, 3>() + fp8::negativeNum<7, 8>()), (fp8::negativeNum<5, 4>()));
+    // 1_0010e5 - 1_0000e2 = 1_0000e5
+    EXPECT_EQ((fp8::positiveNum<5, 2>() + fp8::negativeNum<2, 0>()), (fp8::positiveNum<5, 0>()));
+    EXPECT_EQ((fp8::positiveNum<2, 0>() + fp8::negativeNum<5, 2>()), (fp8::negativeNum<5, 0>()));
 }

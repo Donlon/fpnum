@@ -2,14 +2,14 @@
 #include <fp8.h>
 #include <gtest/gtest.h>
 
-template<unsigned int e, unsigned int m>
+template<size_t e, size_t m>
 void expectPositive(const fpnum<e, m> &num) {
     EXPECT_FALSE(num.isNegative());
     EXPECT_TRUE(num.isPositive());
     EXPECT_FALSE(num.isZero());
 }
 
-template<unsigned int e, unsigned int m>
+template<size_t e, size_t m>
 void expectNegative(const fpnum<e, m> &num) {
     EXPECT_TRUE(num.isNegative());
     EXPECT_FALSE(num.isPositive());

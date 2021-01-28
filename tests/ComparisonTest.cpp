@@ -2,7 +2,7 @@
 #include <fp8.h>
 #include <gtest/gtest.h>
 
-template<unsigned int e, unsigned int m>
+template<size_t e, size_t m>
 void testGt(const fpnum<e, m> &num1, const fpnum<e, m> &num2) {
     EXPECT_TRUE(num1 > num2);
     EXPECT_TRUE(num2 < num1);
@@ -10,7 +10,7 @@ void testGt(const fpnum<e, m> &num1, const fpnum<e, m> &num2) {
     EXPECT_FALSE(num2 >= num1);
 }
 
-template<unsigned int e, unsigned int m>
+template<size_t e, size_t m>
 void testGtEq(const fpnum<e, m> &num1, const fpnum<e, m> &num2) {
     EXPECT_TRUE(num1 >= num2);
     EXPECT_TRUE(num2 <= num1);
@@ -18,7 +18,7 @@ void testGtEq(const fpnum<e, m> &num1, const fpnum<e, m> &num2) {
     EXPECT_FALSE(num2 > num1);
 }
 
-template<unsigned int e, unsigned int m>
+template<size_t e, size_t m>
 void testEq(const fpnum<e, m> &num1, const fpnum<e, m> &num2) {
     EXPECT_TRUE(num1 == num2);
     EXPECT_FALSE(num1 != num2);
