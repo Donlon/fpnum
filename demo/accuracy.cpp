@@ -10,8 +10,6 @@ using fp_t = fp8a;
 
 const int kCount = 5000;
 
-MATFile *matFile = nullptr;
-
 template<typename _fp_type>
 double getError(double num) {
     _fp_type v((float) num);
@@ -23,7 +21,7 @@ double getError(double num) {
 }
 
 template<typename _fp_type>
-void testAccuracy(const char *typeName) {
+void testAccuracy(MatFile &matFile, const char *typeName) {
     const int halfCount = kCount / 2;
     const double p = std::pow(0.5, (double) (fp_t::exp_max + 1) / halfCount);
 
@@ -71,27 +69,23 @@ void testAccuracy(const char *typeName) {
 
     printBuffer(xValue.get(), kCount, "nums");
     printBuffer(error.get(), kCount, "error");
-    matAppendData(matFile, std::string("x_") + typeName, xValue.get(), kCount);
-    matAppendData(matFile, std::string("error_") + typeName, error.get(), kCount);
+    matFile.matAppendData(std::string("x_") + typeName, xValue.get(), kCount);
+    matFile.matAppendData(std::string("error_") + typeName, error.get(), kCount);
 }
 
 int main() {
 #if defined(MATLAB) && defined(EXPORT_MAT)
-    matFile = matOpen("accuracy.mat", "w");
-    if (!matFile) {
+    MatFile matFile("accuracy.mat", "w");
+    if (!matFile.isOpen()) {
         std::cerr << "Can't open accuracy.mat for writing" << std::endl;
         return 1;
     }
 #endif
 
-    testAccuracy<fp8y>("fp8y");
-    testAccuracy<fp8z>("fp8z");
-    testAccuracy<fp8>("fp8");
-    testAccuracy<fp8a>("fp8a");
-    testAccuracy<fp8b>("fp8b");
-    testAccuracy<fp8c>("fp8c");
-
-#if defined(MATLAB) && defined(EXPORT_MAT)
-    matClose(matFile);
-#endif
+    testAccuracy<fp8y>(matFile, "fp8y");
+    testAccuracy<fp8z>(matFile, "fp8z");
+    testAccuracy<fp8>(matFile, "fp8");
+    testAccuracy<fp8a>(matFile, "fp8a");
+    testAccuracy<fp8b>(matFile, "fp8b");
+    testAccuracy<fp8c>(matFile, "fp8c");
 }

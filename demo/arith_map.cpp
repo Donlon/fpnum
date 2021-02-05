@@ -11,10 +11,8 @@ enum OpType {
     Mul
 };
 
-MATFile *matFile = nullptr;
-
 template<typename _fpType, OpType opType>
-void arithTest(const char *name) {
+void arithTest(MatFile &matFile, const char *name) {
     const int w = 1 << (_fpType::exp_n + _fpType::man_n + 1);
     std::vector<_fpType> row;
     row.reserve(w);
@@ -83,26 +81,25 @@ void arithTest(const char *name) {
     std::cout << "Average error:     " << errorSum / (w * w) << std::endl;
     std::cout << "Average abs error: " << absErrorSum / (w * w) << std::endl;
 
-    matAppendData(matFile, std::string("x_") + name, row);
-    matAppendData(matFile, std::string("y_") + name, col);
-    matAppendData2d(matFile, std::string("error_") + name, errorMap);
+#if defined(MATLAB) && defined(EXPORT_MAT)
+    matFile.matAppendData(std::string("x_") + name, row);
+    matFile.matAppendData(std::string("y_") + name, col);
+    matFile.matAppendData2d(std::string("error_") + name, errorMap);
+#endif
 
     std::cout << std::endl;
 }
 
 int main() {
 #if defined(MATLAB) && defined(EXPORT_MAT)
-    matFile = matOpen("arith_map.mat", "w");
-    if (!matFile) {
+    MatFile matFile("arith_map.mat", "w");
+    if (!matFile.isOpen()) {
         std::cerr << "Can't open accuracy.mat for writing" << std::endl;
         return 1;
     }
 #endif
 
-    arithTest<fp8a, Add>("fp8add");
-    arithTest<fp8, Mul>("fp8mul");
+    arithTest<fp8a, Add>(matFile, "fp8add");
+    arithTest<fp8, Mul>(matFile, "fp8mul");
 
-#if defined(MATLAB) && defined(EXPORT_MAT)
-    matClose(matFile);
-#endif
 }

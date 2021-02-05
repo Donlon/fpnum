@@ -1,16 +1,16 @@
-#include <complex>
 #include <iostream>
 #include <memory>
 
 #include <fpnum.h>
 #include <fp8.h>
+#include <codecvt>
 
 #include "common.h"
 
 const size_t fftSize_ldn = 8; // fft256
 const size_t fftSize = 1 << fftSize_ldn;
 
-MATFile *matFile = nullptr;
+static size_t figIndex = 1;
 
 template<typename _num_type>
 std::unique_ptr<_num_type[]> generateFFTTable() {
@@ -225,7 +225,7 @@ auto fftRealFp(_num_type *fftSourceData, _num_type *twiddleFactorList) {
 }
 
 template<typename _num_type>
-void testFFT(const char *typeName) {
+void testFFT(matlab::engine::MATLABEngine &engine, MatFile &matFile, const char *typeName) {
     auto fftTable = generateFFTTable<_num_type>();
     auto sourceData = generateSourceData<_num_type>();
     std::cout << "FFT table:" << std::endl;
@@ -256,28 +256,59 @@ void testFFT(const char *typeName) {
     std::cout << "Output power:" << std::endl;
     printBuffer(dataPower.get(), fftSize / 2, "out");
 
-    matAppendData(matFile, std::string("power_") + typeName, dataPower.get(), fftSize / 2);
+#if defined(MATLAB) && defined(EXPORT_MAT)
+    matFile.matAppendData(std::string("power_") + typeName, dataPower.get(), fftSize / 2);
+#endif
+#if defined(MATLAB) && defined(SHOW_FIG)
+    matlab::data::ArrayFactory factory;
+    matlab::data::TypedArray<float> powerArray = factory.createArray({1, fftSize / 2}, dataPower.get(),
+                                                                     dataPower.get() + fftSize / 2);
+    matlab::data::Array dbArray = engine.feval(u"pow2db", powerArray);
+    engine.feval(u"subplot", {
+            factory.createScalar<double>(2),
+            factory.createScalar<double>(1),
+            factory.createScalar<double>(figIndex),
+    });
+    engine.feval(u"plot", dbArray);
+    engine.feval(u"title", {factory.createScalar(typeName)});
+    figIndex++;
+#endif
 
     std::cout << std::endl;
     std::cout << std::endl;
 }
 
 int main() {
-    // using fp_t = fp8a;
-    // using fp_complex_t = std::complex<fp_t>;
-
 #if defined(MATLAB) && defined(EXPORT_MAT)
-    matFile = matOpen("fft_real.mat", "w");
-    if (!matFile) {
+    MatFile matFile("fft_real.mat", "w");
+    if (!matFile.isOpen()) {
         std::cerr << "Can't open accuracy.mat for writing" << std::endl;
         return 1;
     }
 #endif
+#if defined(MATLAB) && defined(SHOW_FIG)
+    std::vector<std::u16string> matlabs = matlab::engine::findMATLAB();
+    if (matlabs.empty()) {
+        std::cerr << "No shared MATLAB is found" << std::endl;
+        return 1;
+    }
+    std::wstring_convert<std::codecvt_utf8<char16_t>, char16_t> converter;
+    for (auto &s : matlabs) {
+        std::cout << converter.to_bytes(s) << std::endl;
+    }
+    std::unique_ptr<matlab::engine::MATLABEngine> matlabPtr = matlab::engine::connectMATLAB(matlabs[0]);
+    if (!matlabPtr) {
+        std::cerr << "Can't connect to the MATLAB instance" << std::endl;
+        return 1;
+    }
+    matlab::data::ArrayFactory factory;
+    matlab::data::CharArray version = matlabPtr->feval(u"version", factory.createEmptyArray());
+    std::cout << "Connected to: " << version.toAscii() << std::endl;
 
-    testFFT<float>("float");
-    testFFT<fp8a>("fp8a");
-
-#if defined(MATLAB) && defined(EXPORT_MAT)
-    matClose(matFile);
+    matlabPtr->eval(u"close all");
+    matlabPtr->eval(u"figure");
 #endif
+
+    testFFT<float>(*matlabPtr, matFile, "float");
+    testFFT<fp8a>(*matlabPtr, matFile, "fp8a");
 }
