@@ -10,6 +10,8 @@
 const size_t fftSize_ldn = 8; // fft256
 const size_t fftSize = 1 << fftSize_ldn;
 
+MATFile *matFile = nullptr;
+
 template<typename _num_type>
 std::unique_ptr<_num_type[]> generateFFTTable() {
     size_t size = fftSize * sizeof(_num_type);
@@ -223,7 +225,7 @@ auto fftRealFp(_num_type *fftSourceData, _num_type *twiddleFactorList) {
 }
 
 template<typename _num_type>
-void testFFT() {
+void testFFT(const char *typeName) {
     auto fftTable = generateFFTTable<_num_type>();
     auto sourceData = generateSourceData<_num_type>();
     std::cout << "FFT table:" << std::endl;
@@ -253,14 +255,29 @@ void testFFT() {
 
     std::cout << "Output power:" << std::endl;
     printBuffer(dataPower.get(), fftSize / 2, "out");
+
+    matAppendData(matFile, std::string("power_") + typeName, dataPower.get(), fftSize / 2);
+
     std::cout << std::endl;
     std::cout << std::endl;
 }
 
 int main() {
-    using fp_t = fp8a;
+    // using fp_t = fp8a;
     // using fp_complex_t = std::complex<fp_t>;
 
-    testFFT<float>();
-    testFFT<fp_t>();
+#if defined(MATLAB) && defined(EXPORT_MAT)
+    matFile = matOpen("fft_real.mat", "w");
+    if (!matFile) {
+        std::cerr << "Can't open accuracy.mat for writing" << std::endl;
+        return 1;
+    }
+#endif
+
+    testFFT<float>("float");
+    testFFT<fp8a>("fp8a");
+
+#if defined(MATLAB) && defined(EXPORT_MAT)
+    matClose(matFile);
+#endif
 }

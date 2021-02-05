@@ -317,11 +317,11 @@ struct fpnum {
         return mantissa + (1u << _m);
     }
 
-    explicit operator float() {
+    explicit operator float() const {
         return (float) getValue();
     }
 
-    explicit operator double() {
+    explicit operator double() const {
         return getValue();
     }
 
